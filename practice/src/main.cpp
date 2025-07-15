@@ -1,5 +1,5 @@
 #include "main.h"
-#include "lemlib/api.hpp"
+#include "lemlib/api.hpp" // IWYU pragma: keep
 
 /**
  * Runs initialization code. This occurs as soon as the program is started.
@@ -8,8 +8,77 @@
  * to keep execution time for this mode under a few seconds.
  */
 void initialize() {
-	pros::lcd::initialize();
-	pros::lcd::set_text(1, "Hello PROS User!");
+	pros::lcd::initialize(); // Initialize the LCD display
+	pros::Imu imu(5); // IMU on port 5
+
+	pros::MotorGroup leftMotors({20, 10});
+	pros::MotorGroup rightMotors({11, 1});
+
+	leftMotors.set_gearing(pros::v5::MotorGears::green);
+	rightMotors.set_gearing(pros::v5::MotorGears::green);
+	leftMotors.set_encoder_units(pros::v5::MotorUnits::counts);
+	rightMotors.set_encoder_units(pros::v5::MotorUnits::counts);
+	leftMotors.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	rightMotors.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+
+	lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
+								  &rightMotors, // right motor group
+								  10, // 10 inch track width
+								  lemlib::Omniwheel::NEW_275, // using new 4" omnis
+								  333.33, // drivetrain rpm is 333.33
+								  2 // horizontal drift is 2 (for now)
+	);
+				// could definitely be better with the tracking wheels or other sensors, but we don't have the materials for that
+	lemlib::OdomSensors sensors(nullptr, // no vertical tracking wheel
+							   nullptr, // no second vertical tracking wheel
+							   nullptr, // no horizontal tracking wheel
+							   nullptr, // no second horizontal tracking wheel
+							   &imu); // IMU
+
+							   // lateral PID controller
+	lemlib::ControllerSettings lateral_controller(10, // proportional gain (kP)
+												  0, // integral gain (kI)
+												  3, // derivative gain (kD)
+												  3, // anti windup
+												  1, // small error range, in inches
+												  100, // small error range timeout, in milliseconds
+												  3, // large error range, in inches
+												  500, // large error range timeout, in milliseconds
+												  20 // maximum acceleration (slew)
+);
+
+// angular PID controller
+	lemlib::ControllerSettings angular_controller(2, // proportional gain (kP)
+												  0, // integral gain (kI)
+												  10, // derivative gain (kD)
+												  3, // anti windup
+												  1, // small error range, in degrees
+												  100, // small error range timeout, in milliseconds
+												  3, // large error range, in degrees
+												  500, // large error range timeout, in milliseconds
+												  0 // maximum acceleration (slew)
+); 
+
+	lemlib::Chassis chassis(drivetrain, // drivetrain settings
+							lateral_controller, // lateral PID settings
+							angular_controller, // angular PID settings
+							sensors // odometry sensors
+
+);
+
+	chassis.calibrate(); // calibrate sensors
+	// print position to brain screen
+	pros::Task screen_task([&]() {
+		while (true) {
+			// print robot location to the brain screen
+			pros::lcd::print(0, "X: %f", chassis.getPose().x); // x
+			pros::lcd::print(1, "Y: %f", chassis.getPose().y); // y
+			pros::lcd::print(2, "Theta: %f", chassis.getPose().theta); // heading
+			// delay to save resources
+			pros::delay(20);
+		}
+	});
+
 }
 
 /**
@@ -57,9 +126,5 @@ void autonomous() {}
  * task, not resume it from where it left off.
  */
 void opcontrol() {
-	pros::Motor please (1);
-	please.set_gearing(pros::E_MOTOR_GEARSET_18);
-	please.move_velocity(100);
-	pros::delay(1000); // Move at 100 RPM for 1 second
-	please.move_velocity(0);
+	
 }
