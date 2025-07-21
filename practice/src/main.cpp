@@ -5,7 +5,7 @@ pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 pros::Imu imu(5); // IMU on port 5
 
-pros::MotorGroup leftMotors({20, 10});
+pros::MotorGroup leftMotors({-20, -10});
 pros::MotorGroup rightMotors({11, 1});
 
 lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
@@ -45,11 +45,26 @@ lemlib::ControllerSettings angular_controller(2, // proportional gain (kP)
 											  500, // large error range timeout, in milliseconds
 											  0 // maximum acceleration (slew)
 ); 
+// controller stuff
+// input curve for throttle input during driver control
+lemlib::ExpoDriveCurve throttle_curve(3, // joystick deadband out of 127
+                                     10, // minimum output where drivetrain will move out of 127
+                                     1.019 // expo curve gain
+);
+
+// input curve for steer input during driver control
+lemlib::ExpoDriveCurve steer_curve(3, // joystick deadband out of 127
+                                  10, // minimum output where drivetrain will move out of 127
+                                  1.019 // expo curve gain
+);
+
 
 lemlib::Chassis chassis(drivetrain, // drivetrain settings
 						lateral_controller, // lateral PID settings
 						angular_controller, // angular PID settings
-						sensors // odometry sensors
+						sensors, // odometry sensors
+						&throttle_curve, 
+                        &steer_curve
 );
 /**
  * Runs initialization code. This occurs as soon as the program is started.
