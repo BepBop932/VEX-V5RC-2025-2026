@@ -48,14 +48,14 @@ lemlib::ControllerSettings angular_controller(2, // proportional gain (kP)
 // controller stuff
 // input curve for throttle input during driver control
 lemlib::ExpoDriveCurve throttle_curve(3, // joystick deadband out of 127
-                                     10, // minimum output where drivetrain will move out of 127
-                                     1.019 // expo curve gain
+									 10, // minimum output where drivetrain will move out of 127
+									 1.019 // expo curve gain
 );
 
 // input curve for steer input during driver control
 lemlib::ExpoDriveCurve steer_curve(3, // joystick deadband out of 127
-                                  10, // minimum output where drivetrain will move out of 127
-                                  1.019 // expo curve gain
+								  10, // minimum output where drivetrain will move out of 127
+								  1.019 // expo curve gain
 );
 
 
@@ -64,7 +64,7 @@ lemlib::Chassis chassis(drivetrain, // drivetrain settings
 						angular_controller, // angular PID settings
 						sensors, // odometry sensors
 						&throttle_curve, 
-                        &steer_curve
+						&steer_curve
 );
 /**
  * Runs initialization code. This occurs as soon as the program is started.
@@ -127,7 +127,15 @@ void competition_initialize() {}
  * will be stopped. Re-enabling the robot will restart the task, not re-start it
  * from where it left off.
  */
-void autonomous() {}
+
+ASSET(PLEASE_txt);
+void autonomous() {
+	// set chassis pose
+	chassis.setPose(65, -15, 270);
+	// lookahead distance: 15 inches
+	// timeout: 2000 ms
+	chassis.follow(PLEASE_txt, 15, 2000);
+}
 
 /**
  * Runs the operator control code. This function will be started in its own task
@@ -143,15 +151,16 @@ void autonomous() {}
  * task, not resume it from where it left off.
  */
 void opcontrol() {
-    while (true) {
-        // get left y and right y positions
-        int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
-        int rightY = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y);
+	autonomous(); // run autonomous code for testing purposes
+	while (true) {
+		// get left y and right y positions
+		int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+		int rightY = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y);
 
-        // move the robot
-        chassis.tank(leftY, rightY);
+		// move the robot
+		chassis.tank(leftY, rightY);
 
-        // delay to save resources
-        pros::delay(25);
-    }
+		// delay to save resources
+		pros::delay(25);
+	}
 }
