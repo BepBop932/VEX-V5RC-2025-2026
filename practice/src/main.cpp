@@ -3,15 +3,15 @@
 
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
-pros::Imu imu(5); // IMU on port 5
+//pros::Imu imu(5); // IMU on port 5
 
-pros::MotorGroup leftMotors({-20, -10});
-pros::MotorGroup rightMotors({11, 1});
+pros::MotorGroup leftMotors({-11, -1});
+pros::MotorGroup rightMotors({20, 10});
 
 lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
 							  &rightMotors, // right motor group
-							  10, // 10 inch track width
-							  lemlib::Omniwheel::NEW_275, // using new 4" omnis
+							  12.5, // 12.5 inch track width
+							  lemlib::Omniwheel::NEW_325, // using new 3.25" omnis
 							  333.33, // drivetrain rpm is 333.33
 							  2 // horizontal drift is 2 (for now)
 );
@@ -20,7 +20,7 @@ lemlib::OdomSensors sensors(nullptr, // no vertical tracking wheel
 						   nullptr, // no second vertical tracking wheel
 						   nullptr, // no horizontal tracking wheel
 						   nullptr, // no second horizontal tracking wheel
-						   &imu); // IMU
+						   nullptr);//&imu); // IMU
 
 						   // lateral PID controller
 lemlib::ControllerSettings lateral_controller(10, // proportional gain (kP)
@@ -151,7 +151,7 @@ void autonomous() {
  * task, not resume it from where it left off.
  */
 void opcontrol() {
-	autonomous(); // run autonomous code for testing purposes
+	//autonomous(); // run autonomous code for testing purposes
 	while (true) {
 		// get left y and right y positions
 		int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
