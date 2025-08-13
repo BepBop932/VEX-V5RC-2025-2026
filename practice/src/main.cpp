@@ -152,8 +152,24 @@ void autonomous() {
  */
 void opcontrol() {
 	//autonomous(); // run autonomous code for testing purposes
+	pros::Motor chain (12);
+	pros::Motor back (13);
+	pros::Motor top_intake (14);
+
 	while (true) {
 		// get left y and right y positions
+		if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_A)) { // if left button is pressed
+			chain.move(127);
+		} else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_B)) {
+			top_intake.move(-127);
+		} else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y)) {
+			back.move(-127);
+		} else {
+			chain.move(0);
+			top_intake.move(0);
+			back.move(0);
+		}
+
 		int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
 		int rightY = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y);
 
