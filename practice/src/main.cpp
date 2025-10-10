@@ -5,8 +5,8 @@ pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 //pros::Imu imu(5); // IMU on port 5
 
-pros::MotorGroup leftMotors({-11, -1});
-pros::MotorGroup rightMotors({20, 10});
+pros::MotorGroup leftMotors({-11, -1, -2});
+pros::MotorGroup rightMotors({20, 10, -9});
 
 lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
 							  &rightMotors, // right motor group
