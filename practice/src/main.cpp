@@ -1,12 +1,19 @@
 #include "main.h"
 #include "lemlib/api.hpp"
 
+bool pistons = false;
+
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 //pros::Imu imu(5); // IMU on port 5
 
 pros::MotorGroup leftMotors({-11, -1, -2});
 pros::MotorGroup rightMotors({20, 10, -9});
+
+pros::Motor top (12);
+pros::Motor bottom (13);
+
+pros::adi::DigitalOut front ('A'); // ADI port A
 
 lemlib::Drivetrain drivetrain(&leftMotors, // left motor group
 							  &rightMotors, // right motor group
@@ -131,10 +138,10 @@ void competition_initialize() {}
 ASSET(PLEASE_txt);
 void autonomous() {
 	// set chassis pose
-	chassis.setPose(65, -15, 270);
+	//chassis.setPose(65, -15, 270);
 	// lookahead distance: 15 inches
 	// timeout: 2000 ms
-	chassis.follow(PLEASE_txt, 15, 2000);
+	//chassis.follow(PLEASE_txt, 15, 2000);
 }
 
 /**
@@ -152,27 +159,38 @@ void autonomous() {
  */
 void opcontrol() {
 	//autonomous(); // run autonomous code for testing purposes
-	pros::Motor chain (12);
-	pros::Motor back (13);
-	pros::Motor top_intake (14);
-
+	int count = 0;
+	
+	
 	while (true) {
 		// get left y and right y positions
 		if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_A)) { // if left button is pressed
-			chain.move(127);
+			top.move(127);
 		} else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_B)) {
-			top_intake.move(-127);
+			bottom.move(127);
 		} else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y)) {
-			back.move(-127);
+			top.move(127);
+			bottom.move(127);
 		} else {
-			chain.move(0);
-			top_intake.move(0);
-			back.move(0);
+			top.move(0);
+			bottom.move(0);
 		}
 
-		int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
-		int rightY = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y);
-
+		if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_X)) {
+			pistons = !pistons;
+			front.set_value(pistons);
+		}
+		
+		// print temp to controller screen
+		if (count % 25 == 0) {
+			std::vector<double> leftTemps = leftMotors.get_temperature_all();
+			std::vector<double> rightTemps = rightMotors.get_temperature_all();
+			controller.print(0, 0, "° %f", leftTemps[0], leftTemps[1], leftTemps[2], rightTemps[0], rightTemps[1], rightTemps[2]);
+		}
+		count++;
+		
+		int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) ;
+		int rightY = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y) ;
 		// move the robot
 		chassis.tank(leftY, rightY);
 
