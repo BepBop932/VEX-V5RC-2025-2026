@@ -2,16 +2,19 @@
 #include "lemlib/api.hpp"
 
 bool pistons = false;
+bool speedToggled = false;
+std::vector<int> overheat;
+float speed = 0.75;
 
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
-//pros::Imu imu(5); // IMU on port 5
+pros::Imu imu(5); // IMU on port 5
 
-pros::MotorGroup leftMotors({-11, -1, -2});
-pros::MotorGroup rightMotors({20, 10, -9});
+pros::MotorGroup leftMotors({-11, -1, -2}, pros::MotorGearset::green);
+pros::MotorGroup rightMotors({20, 10, 9}, pros::MotorGearset::green);
 
-pros::Motor top (12);
-pros::Motor bottom (13);
+pros::Motor top (-17);
+pros::Motor bottom (-13);
 
 pros::adi::DigitalOut front ('A'); // ADI port A
 
@@ -27,7 +30,7 @@ lemlib::OdomSensors sensors(nullptr, // no vertical tracking wheel
 						   nullptr, // no second vertical tracking wheel
 						   nullptr, // no horizontal tracking wheel
 						   nullptr, // no second horizontal tracking wheel
-						   nullptr);//&imu); // IMU
+						   &imu); // IMU
 
 						   // lateral PID controller
 lemlib::ControllerSettings lateral_controller(10, // proportional gain (kP)
@@ -121,8 +124,9 @@ void disabled() {}
  * This task will exit when the robot is enabled and autonomous or opcontrol
  * starts.
  */
-void competition_initialize() {}
-
+void competition_initialize() {
+	controller.print (0,0, "Lock tf in");
+}
 /**
  * Runs the user autonomous code. This function will be started in its own task
  * with the default priority and stack size whenever the robot is enabled via
@@ -138,10 +142,15 @@ void competition_initialize() {}
 ASSET(PLEASE_txt);
 void autonomous() {
 	// set chassis pose
-	//chassis.setPose(65, -15, 270);
+	chassis.setPose(-64.811, -14.496, 90);
+	top.move(127);
+	bottom.move(127);
+	pros::delay(250);
 	// lookahead distance: 15 inches
 	// timeout: 2000 ms
-	//chassis.follow(PLEASE_txt, 15, 2000);
+	chassis.follow(PLEASE_txt, 15, 2000);
+	top.move(0);
+	bottom.move(0);
 }
 
 /**
@@ -164,16 +173,31 @@ void opcontrol() {
 	
 	while (true) {
 		// get left y and right y positions
-		if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_A)) { // if left button is pressed
+		if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) { // if left button is pressed
 			top.move(127);
-		} else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_B)) {
+		} else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1)) { // if right button is pressed
+			top.move(-127);
+		} else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
 			bottom.move(127);
+		} else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2)) {
+			bottom.move(-127);
 		} else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y)) {
 			top.move(127);
 			bottom.move(127);
+		} else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
+			if (!speedToggled) {
+				if (speed == 0.75) {
+					speed = 1.0;
+				}
+				else	 {
+					speed = 0.75;
+				}
+				speedToggled = true;
+			}
 		} else {
 			top.move(0);
 			bottom.move(0);
+			speedToggled = false;
 		}
 
 		if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_X)) {
@@ -185,12 +209,26 @@ void opcontrol() {
 		if (count % 25 == 0) {
 			std::vector<double> leftTemps = leftMotors.get_temperature_all();
 			std::vector<double> rightTemps = rightMotors.get_temperature_all();
-			controller.print(0, 0, "° %f", leftTemps[0], leftTemps[1], leftTemps[2], rightTemps[0], rightTemps[1], rightTemps[2]);
+			for (int i = 0; i < leftTemps.size(); i++) {
+				if (leftTemps[i] > 55) {
+					overheat.push_back(1);
+				} else {
+					overheat.push_back(0);
+				}
+				if (rightTemps[i] > 55)
+				{
+					overheat.push_back(1);
+				} else {
+					overheat.push_back(0);
+				}
+				
+			}
+			controller.print(0, 0, "%i %i %i %i %i %i  %.2f", overheat[0], overheat[1], overheat[2], overheat[3], overheat[4], overheat[5], speed);
 		}
 		count++;
-		
-		int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) ;
-		int rightY = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y) ;
+
+		int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y) * speed;
+		int rightY = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_Y) * speed;
 		// move the robot
 		chassis.tank(leftY, rightY);
 
