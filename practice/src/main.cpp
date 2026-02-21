@@ -142,15 +142,15 @@ void competition_initialize() {
 ASSET(PLEASE_txt);
 void autonomous() {
 	// set chassis pose
-	chassis.setPose(-64.811, -14.496, 90);
-	top.move(127);
-	bottom.move(127);
-	pros::delay(250);
+	// chassis.setPose(-64.811, -14.496, 90);
+	// top.move(127);
+	// bottom.move(127);
+	// pros::delay(250);
 	// lookahead distance: 15 inches
 	// timeout: 2000 ms
-	chassis.follow(PLEASE_txt, 15, 2000);
-	top.move(0);
-	bottom.move(0);
+	// chassis.follow(PLEASE_txt, 15, 2000);
+	// top.move(0);
+	// bottom.move(0);
 }
 
 /**
