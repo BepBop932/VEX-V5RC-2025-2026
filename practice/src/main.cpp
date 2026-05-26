@@ -3,17 +3,18 @@
 
 bool pistons = false;
 bool speedToggled = false;
+bool reverseToggled = false;
 std::vector<int> overheat;
 float speed = 0.75;
 
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
-pros::Imu imu(5); // IMU on port 5
+pros::Imu imu(16); // IMU on port 16
 
 pros::MotorGroup leftMotors({-11, -1, -2}, pros::MotorGearset::green);
 pros::MotorGroup rightMotors({20, 10, 9}, pros::MotorGearset::green);
 
-pros::Motor top (-17);
+pros::Motor top (17);
 pros::Motor bottom (-13);
 
 pros::adi::DigitalOut front ('A'); // ADI port A
@@ -125,7 +126,7 @@ void disabled() {}
  * starts.
  */
 void competition_initialize() {
-	controller.print (0,0, "Lock tf in");
+	controller.print (0,0, "Lock tf in %i", 0);
 }
 /**
  * Runs the user autonomous code. This function will be started in its own task
@@ -184,7 +185,7 @@ void opcontrol() {
 		} else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_Y)) {
 			top.move(127);
 			bottom.move(127);
-		} else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_UP)) {
+		} else if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_UP)) {
 			if (!speedToggled) {
 				if (speed == 0.75) {
 					speed = 1.0;
@@ -194,6 +195,9 @@ void opcontrol() {
 				}
 				speedToggled = true;
 			}
+		} else if (controller.get_digital_new_press(pros::E_CONTROLLER_DIGITAL_DOWN)) {
+			speed = -speed;
+			reverseToggled = !reverseToggled;
 		} else {
 			top.move(0);
 			bottom.move(0);
@@ -223,7 +227,7 @@ void opcontrol() {
 				}
 				
 			}
-			controller.print(0, 0, "%i %i %i %i %i %i  %.2f", overheat[0], overheat[1], overheat[2], overheat[3], overheat[4], overheat[5], speed);
+			controller.print(0, 0, "%i %i %i %i %i %i  %.3f %i", overheat[0], overheat[1], overheat[2], overheat[3], overheat[4], overheat[5], speed, reverseToggled);
 		}
 		count++;
 
